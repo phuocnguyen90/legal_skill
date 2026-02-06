@@ -90,7 +90,8 @@ router.post('/brief', async (req, res) => {
 // 4. Configuration Info
 router.get('/config', (req, res) => {
     res.json({
-        ollamaModel: appConfig.ollama.model,
-        ollamaBaseUrl: appConfig.ollama.baseUrl
+        aiModel: appConfig.ai.model,
+        aiBaseUrl: appConfig.ai.baseUrl,
+        aiProvider: appConfig.ai.provider
     });
 });

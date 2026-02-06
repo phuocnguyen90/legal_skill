@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { resolve } from 'path';
 import {
-    createOllamaClient,
+    createAiClient,
     chat,
     hasToolUse,
     getToolUseBlocks,
@@ -9,11 +9,11 @@ import {
     documentTools,
     type Message,
     type ToolResultBlockParam,
-} from '../../ollama/index.js';
+} from '../../ai/index.js';
 import { parsePdf, isPdfFile } from '../../mcp/parsers/pdf-parser.js';
 import { parseDocx, isDocxFile } from '../../mcp/parsers/docx-parser.js';
 import { parseText, isTextFile } from '../../mcp/parsers/text-parser.js';
-import { loadPlaybook } from '../../config/index.js';
+import { appConfig, loadPlaybook } from '../../config/index.js';
 
 /**
  * Execute a document tool call
@@ -24,7 +24,12 @@ async function executeDocumentTool(
 ): Promise<string> {
     switch (toolName) {
         case 'read_document': {
-            const filePath = toolInput.path as string;
+            const pathValue = toolInput.path;
+            if (typeof pathValue !== 'string') {
+                console.error(`❌ [Tool Error] 'read_document' called with invalid input:`, JSON.stringify(toolInput));
+                return JSON.stringify({ success: false, error: 'Missing or invalid "path" argument. You must provide the "path" to the file.' });
+            }
+            const filePath = pathValue.trim();
             const resolvedPath = resolve(filePath);
 
             if (!existsSync(resolvedPath)) {
@@ -62,7 +67,7 @@ async function runAgentLoop(
     userMessage: string,
     maxIterations: number = 10
 ): Promise<string> {
-    const client = createOllamaClient();
+    const client = createAiClient();
     const messages: Message[] = [{ role: 'user', content: userMessage }];
 
     let iterations = 0;
@@ -70,14 +75,23 @@ async function runAgentLoop(
     while (iterations < maxIterations) {
         iterations++;
 
+        console.error(`\n🤖 [Iteration ${iterations}] Calling model: ${appConfig.ai.model}...`);
+
         const response = await chat(client, messages, {
             systemPrompt,
             tools: documentTools,
+            maxTokens: 8192,
         });
 
-        // If no tool use, return the final text
+        // Print text content if present
+        const text = getTextContent(response);
+        if (text) {
+            process.stderr.write(`${text}\n`);
+        }
+
+        // If no tool use, return final text
         if (!hasToolUse(response)) {
-            return getTextContent(response);
+            return text;
         }
 
         // Process tool calls
@@ -85,9 +99,9 @@ async function runAgentLoop(
         const toolResults: ToolResultBlockParam[] = [];
 
         for (const toolUse of toolUseBlocks) {
-            console.error(`[Tool Call] ${toolUse.name}:`, JSON.stringify(toolUse.input));
+            console.error(`\n🛠️  [Tool Call] ${toolUse.name}:`, JSON.stringify(toolUse.input));
             const result = await executeDocumentTool(toolUse.name, toolUse.input as Record<string, unknown>);
-            console.error(`[Tool Result] ${result.substring(0, 200)}...`);
+            console.error(`✅ [Tool Result] ${result.substring(0, 100)}...`);
 
             toolResults.push({
                 type: 'tool_result',
@@ -135,12 +149,14 @@ export async function reviewContract(
 
 ${playbook ? `## Organization Playbook\n${playbook}` : '## Note\nNo playbook configured. Using general commercial standards as baseline.'}`;
 
-    const userMessage = `Please review the contract at: ${documentPath}
+    const userMessage = `I need you to review a contract.
+    
+**Step 1**: Use the 'read_document' tool with the EXACT path: "${documentPath}"
 
 ${options.side ? `We are the ${options.side} in this agreement.` : ''}
 ${options.focusAreas?.length ? `Focus areas: ${options.focusAreas.join(', ')}` : ''}
 
-Provide a clause-by-clause analysis with GREEN/YELLOW/RED classifications and specific redline suggestions for any issues.`;
+After reading the file, provide a clause-by-clause analysis with GREEN/YELLOW/RED classifications and specific redline suggestions for any issues.`;
 
     return await runAgentLoop(systemPrompt, userMessage);
 }

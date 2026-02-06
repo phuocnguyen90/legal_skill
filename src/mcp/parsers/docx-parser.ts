@@ -14,8 +14,13 @@ export async function parseDocx(filePath: string): Promise<ParsedDocument> {
 
     const result = await mammoth.extractRawText({ buffer });
 
+    // Result text often contains excessive newlines from formatting
+    const cleanedText = result.value
+        .replace(/\n{3,}/g, '\n\n') // Replace 3+ newlines with 2
+        .trim();
+
     return {
-        text: result.value,
+        text: cleanedText,
         metadata: {
             messages: result.messages,
         },

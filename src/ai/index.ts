@@ -1,5 +1,5 @@
 export {
-    createOllamaClient,
+    createAiClient,
     chat,
     streamChat,
     hasToolUse,

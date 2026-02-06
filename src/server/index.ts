@@ -32,5 +32,5 @@ httpServer.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
     console.log(`📁 Serving static files from: ${publicDir}`);
     console.log(`🔌 MCP Server Port: ${appConfig.mcp.serverPort}`);
-    console.log(`🤖 Ollama Model: ${appConfig.ollama.model}`);
+    console.log(`🤖 AI Model: ${appConfig.ai.model}`);
 });

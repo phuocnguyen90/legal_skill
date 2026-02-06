@@ -15,7 +15,7 @@ program
     .description('Review a contract against your organization\'s playbook')
     .option('-s, --side <side>', 'Your side in the agreement (vendor or customer)', 'customer')
     .option('-f, --focus <areas>', 'Comma-separated focus areas (e.g., liability,data-protection)')
-    .option('-m, --model <model>', 'Ollama model to use', appConfig.ollama.model)
+    .option('-m, --model <model>', 'AI model to use', appConfig.ai.model)
     .action(async (file, options) => {
         try {
             console.log(`\n📄 Reviewing contract: ${file}`);
@@ -41,7 +41,7 @@ program
 program
     .command('triage <file>')
     .description('Triage an NDA for quick classification')
-    .option('-m, --model <model>', 'Ollama model to use', appConfig.ollama.model)
+    .option('-m, --model <model>', 'AI model to use', appConfig.ai.model)
     .action(async (file, options) => {
         try {
             console.log(`\n📋 Triaging NDA: ${file}`);
@@ -59,7 +59,7 @@ program
 program
     .command('brief <type> [query]')
     .description('Generate a legal brief (topic or incident)')
-    .option('-m, --model <model>', 'Ollama model to use', appConfig.ollama.model)
+    .option('-m, --model <model>', 'AI model to use', appConfig.ai.model)
     .action(async (type, query, options) => {
         if (type !== 'topic' && type !== 'incident') {
             console.error('Error: Brief type must be "topic" or "incident"');
@@ -109,8 +109,9 @@ program
     .description('Show current configuration')
     .action(() => {
         console.log('\n⚙️  Current Configuration:\n');
-        console.log(`Ollama URL: ${appConfig.ollama.baseUrl}`);
-        console.log(`Model: ${appConfig.ollama.model}`);
+        console.log(`AI Provider: ${appConfig.ai.provider}`);
+        console.log(`AI Base URL: ${appConfig.ai.baseUrl}`);
+        console.log(`Model: ${appConfig.ai.model}`);
         console.log(`MCP Server Port: ${appConfig.mcp.serverPort}`);
         console.log(`Playbook Path: ${appConfig.playbook.path || '(not configured)'}`);
         console.log('\nSet these via environment variables or .env file.');

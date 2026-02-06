@@ -7,8 +7,10 @@ import { resolve } from 'path';
 config();
 
 const configSchema = z.object({
-    ollama: z.object({
+    ai: z.object({
+        provider: z.enum(['ollama', 'anthropic', 'glm', 'openai']).default('ollama'),
         baseUrl: z.string().url().default('http://localhost:11434'),
+        apiKey: z.string().default('ollama'),
         model: z.string().default('gemma3:4b'),
     }),
     mcp: z.object({
@@ -23,9 +25,11 @@ export type Config = z.infer<typeof configSchema>;
 
 function loadConfig(): Config {
     return configSchema.parse({
-        ollama: {
-            baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-            model: process.env.OLLAMA_MODEL || 'gpt-oss:20b',
+        ai: {
+            provider: process.env.AI_PROVIDER || 'ollama',
+            baseUrl: process.env.AI_BASE_URL || process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+            apiKey: process.env.AI_API_KEY || 'ollama',
+            model: process.env.AI_MODEL || process.env.OLLAMA_MODEL || 'gemma3:4b',
         },
         mcp: {
             serverPort: parseInt(process.env.MCP_SERVER_PORT || '3100', 10),
