@@ -114,12 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const side = document.getElementById('review-side').value;
         const focus = document.getElementById('review-focus').value;
         const model = document.getElementById('model-select').value;
+        const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
 
         const formData = new FormData();
         formData.append('document', file);
         formData.append('side', side);
         formData.append('focus', focus);
         formData.append('model', model);
+        formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
 
         sendRequest('/api/review', formData, 'review-results');
     });
@@ -127,9 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- NDA Triage Logic ---
     setupDragAndDrop('triage-dropzone', 'triage-file', (file) => {
         const model = document.getElementById('model-select').value;
+        const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
+        formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
 
         sendRequest('/api/triage', formData, 'triage-results');
     });
@@ -137,9 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Compliance Logic ---
     setupDragAndDrop('compliance-dropzone', 'compliance-file', (file) => {
         const model = document.getElementById('model-select').value;
+        const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
+        formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
 
         sendRequest('/api/compliance', formData, 'compliance-results');
     });
@@ -147,9 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Risk Assessment Logic ---
     setupDragAndDrop('risk-dropzone', 'risk-file', (file) => {
         const model = document.getElementById('model-select').value;
+        const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
+        formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
 
         sendRequest('/api/risk', formData, 'risk-results');
     });
@@ -157,9 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Meeting Brief Logic ---
     setupDragAndDrop('meeting-dropzone', 'meeting-file', (file) => {
         const model = document.getElementById('model-select').value;
+        const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
+        formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
 
         sendRequest('/api/meeting', formData, 'meeting-results');
     });
@@ -184,10 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
         content.innerHTML = '';
 
         const model = document.getElementById('model-select').value;
+        const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
         fetch('/api/brief', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, query, model })
+            body: JSON.stringify({ type, query, model, replyInOriginalLanguage })
         })
             .then(res => res.json())
             .then(data => {

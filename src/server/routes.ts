@@ -34,14 +34,15 @@ router.post('/review', upload.single('document'), async (req, res) => {
             return;
         }
 
-        const { side, focus, model } = req.body;
+        const { side, focus, model, replyInOriginalLanguage } = req.body;
         const focusAreas = focus ? focus.split(',').map((s: string) => s.trim()) : [];
 
         // Call existing logic
         const analysis = await reviewContract(req.file.path, {
             side: side as 'vendor' | 'customer',
             focusAreas,
-            model: model as string
+            model: model as string,
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
         });
 
         res.json({ success: true, analysis });
@@ -60,8 +61,11 @@ router.post('/triage', upload.single('document'), async (req, res) => {
             return;
         }
 
-        const { model } = req.body;
-        const analysis = await triageNda(req.file.path, { model: model as string });
+        const { model, replyInOriginalLanguage } = req.body;
+        const analysis = await triageNda(req.file.path, {
+            model: model as string,
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+        });
         res.json({ success: true, analysis });
 
     } catch (error) {
@@ -73,14 +77,17 @@ router.post('/triage', upload.single('document'), async (req, res) => {
 // 3. Legal Brief
 router.post('/brief', async (req, res) => {
     try {
-        const { type, query, model } = req.body;
+        const { type, query, model, replyInOriginalLanguage } = req.body;
 
         if (!type || !query) {
             res.status(400).json({ error: 'Missing type or query' });
             return;
         }
 
-        const analysis = await generateBrief(type as 'topic' | 'incident', query, { model: model as string });
+        const analysis = await generateBrief(type as 'topic' | 'incident', query, {
+            model: model as string,
+            replyInOriginalLanguage: replyInOriginalLanguage // JSON body handles booleans correctly
+        });
         res.json({ success: true, analysis });
 
     } catch (error) {
@@ -96,8 +103,11 @@ router.post('/compliance', upload.single('document'), async (req, res) => {
             res.status(400).json({ error: 'No document file uploaded' });
             return;
         }
-        const { model } = req.body;
-        const result = await checkCompliance(req.file.path, { model: model as string });
+        const { model, replyInOriginalLanguage } = req.body;
+        const result = await checkCompliance(req.file.path, {
+            model: model as string,
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+        });
         res.json({ success: true, analysis: result });
     } catch (error) {
         console.error('Compliance error:', error);
@@ -112,8 +122,11 @@ router.post('/risk', upload.single('document'), async (req, res) => {
             res.status(400).json({ error: 'No document file uploaded' });
             return;
         }
-        const { model } = req.body;
-        const result = await assessRisk(req.file.path, { model: model as string });
+        const { model, replyInOriginalLanguage } = req.body;
+        const result = await assessRisk(req.file.path, {
+            model: model as string,
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+        });
         res.json({ success: true, analysis: result });
     } catch (error) {
         console.error('Risk error:', error);
@@ -128,8 +141,11 @@ router.post('/meeting', upload.single('document'), async (req, res) => {
             res.status(400).json({ error: 'No document file uploaded' });
             return;
         }
-        const { model } = req.body;
-        const result = await summarizeMeeting(req.file.path, { model: model as string });
+        const { model, replyInOriginalLanguage } = req.body;
+        const result = await summarizeMeeting(req.file.path, {
+            model: model as string,
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+        });
         res.json({ success: true, analysis: result });
     } catch (error) {
         console.error('Meeting error:', error);
