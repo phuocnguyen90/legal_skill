@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal AI Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Legal AI</span>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="contract-review">
+                    <span class="icon">📄</span> Contract Review
+                </button>
+                <button class="nav-item" data-tab="nda-triage">
+                    <span class="icon">⚖️</span> NDA Triage
+                </button>
+                <button class="nav-item" data-tab="legal-brief">
+                    <span class="icon">📝</span> Legal Briefing
+                </button>
+            </nav>
+
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="status-dot online"></span>
+                    <span id="model-name">Loading model...</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- Contract Review View -->
+            <section id="contract-review" class="view-section active">
+                <header class="section-header">
+                    <h1>Contract Review</h1>
+                    <p>Upload a contract to analyze against your playbook.</p>
+                </header>
+
+                <div class="controls-area">
+                    <div class="input-group">
+                        <label>Your Role</label>
+                        <select id="review-side">
+                            <option value="customer">Customer</option>
+                            <option value="vendor">Vendor</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Focus Areas (Optional)</label>
+                        <input type="text" id="review-focus" placeholder="e.g. indemnity, liability">
+                    </div>
+                </div>
+
+                <div class="upload-area" id="review-dropzone">
+                    <input type="file" id="review-file" hidden accept=".pdf,.docx,.txt,.md">
+                    <div class="upload-content">
+                        <span class="upload-icon">☁️</span>
+                        <h3>Drop contract here</h3>
+                        <p>or click to browse (PDF, DOCX)</p>
+                    </div>
+                </div>
+
+                <div id="review-results" class="results-area hidden">
+                    <div class="loading-spinner hidden">Processing...</div>
+                    <div class="markdown-content"></div>
+                </div>
+            </section>
+
+            <!-- NDA Triage View -->
+            <section id="nda-triage" class="view-section">
+                <header class="section-header">
+                    <h1>NDA Triage</h1>
+                    <p>Quickly screen NDAs for red flags.</p>
+                </header>
+
+                <div class="upload-area" id="triage-dropzone">
+                    <input type="file" id="triage-file" hidden accept=".pdf,.docx,.txt,.md">
+                    <div class="upload-content">
+                        <span class="upload-icon">🛡️</span>
+                        <h3>Drop NDA here</h3>
+                        <p>or click to browse (PDF, DOCX)</p>
+                    </div>
+                </div>
+
+                <div id="triage-results" class="results-area hidden">
+                    <div class="loading-spinner hidden">Analyzing...</div>
+                    <div class="markdown-content"></div>
+                </div>
+            </section>
+
+            <!-- Legal Brief View -->
+            <section id="legal-brief" class="view-section">
+                <header class="section-header">
+                    <h1>Legal Briefing</h1>
+                    <p>Generate research or incident briefs.</p>
+                </header>
+
+                <div class="brief-form">
+                    <div class="input-group">
+                        <label>Brief Type</label>
+                        <select id="brief-type">
+                            <option value="topic">Research Topic</option>
+                            <option value="incident">Incident Report</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Query / Situation</label>
+                        <textarea id="brief-query" rows="4" placeholder="Describe the topic or incident..."></textarea>
+                    </div>
+                    <button id="generate-brief-btn" class="primary-btn">Generate Brief</button>
+                </div>
+
+                <div id="brief-results" class="results-area hidden">
+                    <div class="loading-spinner hidden">Drafting brief...</div>
+                    <div class="markdown-content"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
