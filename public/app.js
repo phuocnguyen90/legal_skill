@@ -134,6 +134,36 @@ document.addEventListener('DOMContentLoaded', () => {
         sendRequest('/api/triage', formData, 'triage-results');
     });
 
+    // --- Compliance Logic ---
+    setupDragAndDrop('compliance-dropzone', 'compliance-file', (file) => {
+        const model = document.getElementById('model-select').value;
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('model', model);
+
+        sendRequest('/api/compliance', formData, 'compliance-results');
+    });
+
+    // --- Risk Assessment Logic ---
+    setupDragAndDrop('risk-dropzone', 'risk-file', (file) => {
+        const model = document.getElementById('model-select').value;
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('model', model);
+
+        sendRequest('/api/risk', formData, 'risk-results');
+    });
+
+    // --- Meeting Brief Logic ---
+    setupDragAndDrop('meeting-dropzone', 'meeting-file', (file) => {
+        const model = document.getElementById('model-select').value;
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('model', model);
+
+        sendRequest('/api/meeting', formData, 'meeting-results');
+    });
+
     // --- Legal Brief Logic ---
     document.getElementById('generate-brief-btn').addEventListener('click', () => {
         const type = document.getElementById('brief-type').value;
@@ -143,9 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please enter a query');
             return;
         }
-
-        const formData = new FormData(); // Body parser handles JSON too but FormData is easier for consistent fetch helper
-        // Actually fetch helper expects FormData for files, let's just use JSON for brief
 
         const resultsDivId = 'brief-results';
         const resultsDiv = document.getElementById(resultsDivId);

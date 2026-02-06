@@ -33,8 +33,17 @@
                 <button class="nav-item" data-tab="nda-triage">
                     <span class="icon">⚖️</span> NDA Triage
                 </button>
+                <button class="nav-item" data-tab="compliance">
+                    <span class="icon">📜</span> Compliance
+                </button>
+                <button class="nav-item" data-tab="risk-assessment">
+                    <span class="icon">⚠️</span> Risk Assessment
+                </button>
+                <button class="nav-item" data-tab="meeting-brief">
+                    <span class="icon">📅</span> Meeting Brief
+                </button>
                 <button class="nav-item" data-tab="legal-brief">
-                    <span class="icon">📝</span> Legal Briefing
+                    <span class="icon">📝</span> Research Brief
                 </button>
             </nav>
 
@@ -60,7 +69,7 @@
             <section id="contract-review" class="view-section active">
                 <header class="section-header">
                     <h1>Contract Review</h1>
-                    <p>Upload a contract to analyze against your playbook.</p>
+                    <p>Analyze contracts against your negotiation playbook and generate redlines.</p>
                 </header>
 
                 <div class="controls-area">
@@ -80,7 +89,7 @@
                 <div class="upload-area" id="review-dropzone">
                     <input type="file" id="review-file" hidden accept=".pdf,.docx,.txt,.md">
                     <div class="upload-content">
-                        <span class="upload-icon">☁️</span>
+                        <span class="upload-icon">📄</span>
                         <h3>Drop contract here</h3>
                         <p>or click to browse (PDF, DOCX)</p>
                     </div>
@@ -96,13 +105,13 @@
             <section id="nda-triage" class="view-section">
                 <header class="section-header">
                     <h1>NDA Triage</h1>
-                    <p>Quickly screen NDAs for red flags.</p>
+                    <p>Quickly screen NDAs for red flags and categorization.</p>
                 </header>
 
                 <div class="upload-area" id="triage-dropzone">
                     <input type="file" id="triage-file" hidden accept=".pdf,.docx,.txt,.md">
                     <div class="upload-content">
-                        <span class="upload-icon">🛡️</span>
+                        <span class="upload-icon">⚖️</span>
                         <h3>Drop NDA here</h3>
                         <p>or click to browse (PDF, DOCX)</p>
                     </div>
@@ -114,11 +123,77 @@
                 </div>
             </section>
 
+            <!-- Compliance View -->
+            <section id="compliance" class="view-section">
+                <header class="section-header">
+                    <h1>Compliance & Privacy</h1>
+                    <p>Review DPAs, privacy notices, and handle data subject requests.</p>
+                </header>
+
+                <div class="upload-area" id="compliance-dropzone">
+                    <input type="file" id="compliance-file" hidden accept=".pdf,.docx,.txt,.md">
+                    <div class="upload-content">
+                        <span class="upload-icon">📜</span>
+                        <h3>Drop DPA or Privacy doc here</h3>
+                        <p>or click to browse (PDF, DOCX)</p>
+                    </div>
+                </div>
+
+                <div id="compliance-results" class="results-area hidden">
+                    <div class="loading-spinner hidden">Checking compliance...</div>
+                    <div class="markdown-content"></div>
+                </div>
+            </section>
+
+            <!-- Risk Assessment View -->
+            <section id="risk-assessment" class="view-section">
+                <header class="section-header">
+                    <h1>Legal Risk Assessment</h1>
+                    <p>Conduct end-to-end risk analysis of documents or situations.</p>
+                </header>
+
+                <div class="upload-area" id="risk-dropzone">
+                    <input type="file" id="risk-file" hidden accept=".pdf,.docx,.txt,.md">
+                    <div class="upload-content">
+                        <span class="upload-icon">⚠️</span>
+                        <h3>Drop document for risk analysis</h3>
+                        <p>or click to browse (PDF, DOCX)</p>
+                    </div>
+                </div>
+
+                <div id="risk-results" class="results-area hidden">
+                    <div class="loading-spinner hidden">Assessing risk...</div>
+                    <div class="markdown-content"></div>
+                </div>
+            </section>
+
+            <!-- Meeting Brief View -->
+            <section id="meeting-brief" class="view-section">
+                <header class="section-header">
+                    <h1>Meeting Briefing</h1>
+                    <p>Generate summaries and talking points from meeting transcripts or agendas.</p>
+                </header>
+
+                <div class="upload-area" id="meeting-dropzone">
+                    <input type="file" id="meeting-file" hidden accept=".pdf,.docx,.txt,.md">
+                    <div class="upload-content">
+                        <span class="upload-icon">📅</span>
+                        <h3>Drop transcript or agenda here</h3>
+                        <p>or click to browse</p>
+                    </div>
+                </div>
+
+                <div id="meeting-results" class="results-area hidden">
+                    <div class="loading-spinner hidden">Preparing brief...</div>
+                    <div class="markdown-content"></div>
+                </div>
+            </section>
+
             <!-- Legal Brief View -->
             <section id="legal-brief" class="view-section">
                 <header class="section-header">
-                    <h1>Legal Briefing</h1>
-                    <p>Generate research or incident briefs.</p>
+                    <h1>Research Briefing</h1>
+                    <p>Generate deep-dive research on legal topics or incident briefs.</p>
                 </header>
 
                 <div class="brief-form">
@@ -131,7 +206,8 @@
                     </div>
                     <div class="input-group">
                         <label>Query / Situation</label>
-                        <textarea id="brief-query" rows="4" placeholder="Describe the topic or incident..."></textarea>
+                        <textarea id="brief-query" rows="4"
+                            placeholder="Describe the legal topic or incident in detail..."></textarea>
                     </div>
                     <button id="generate-brief-btn" class="primary-btn">Generate Brief</button>
                 </div>

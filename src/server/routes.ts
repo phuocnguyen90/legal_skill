@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { reviewContract, triageNda, generateBrief } from '../cli/commands/index.js';
+import { reviewContract, triageNda, generateBrief, checkCompliance, assessRisk, summarizeMeeting } from '../cli/commands/index.js';
 import { appConfig } from '../config/index.js';
 
 // Setup uploads storage configuration
@@ -89,11 +89,59 @@ router.post('/brief', async (req, res) => {
     }
 });
 
-// 4. Configuration Info
+// 4. Compliance
+router.post('/compliance', upload.single('document'), async (req, res) => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ error: 'No document file uploaded' });
+            return;
+        }
+        const { model } = req.body;
+        const result = await checkCompliance(req.file.path, { model: model as string });
+        res.json({ success: true, analysis: result });
+    } catch (error) {
+        console.error('Compliance error:', error);
+        res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+});
+
+// 5. Risk Assessment
+router.post('/risk', upload.single('document'), async (req, res) => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ error: 'No document file uploaded' });
+            return;
+        }
+        const { model } = req.body;
+        const result = await assessRisk(req.file.path, { model: model as string });
+        res.json({ success: true, analysis: result });
+    } catch (error) {
+        console.error('Risk error:', error);
+        res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+});
+
+// 6. Meeting Brief
+router.post('/meeting', upload.single('document'), async (req, res) => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ error: 'No document file uploaded' });
+            return;
+        }
+        const { model } = req.body;
+        const result = await summarizeMeeting(req.file.path, { model: model as string });
+        res.json({ success: true, analysis: result });
+    } catch (error) {
+        console.error('Meeting error:', error);
+        res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+});
+
+// 7. Configuration Info
 router.get('/config', (req, res) => {
     res.json({
         aiModel: appConfig.ai.model,
-        aiBaseUrl: appConfig.ai.baseUrl,
+        aiBaseUrl: (appConfig.ai as any).baseUrl,
         aiProvider: appConfig.ai.provider
     });
 });

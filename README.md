@@ -6,10 +6,12 @@ An Ollama-powered wrapper for Anthropic's legal skills with built-in document pa
 
 - **Contract Review** - Analyze contracts against your organization's playbook
 - **NDA Triage** - Quick classification of NDAs as GREEN/YELLOW/RED
-- **Legal Briefing** - Generate topic or incident briefs
+- **Compliance & Privacy** - Review DPAs and navigate privacy regulations (GDPR, CCPA)
+- **Risk Assessment** - Conduct end-to-end legal risk analysis
+- **Meeting Briefing** - Summarize transcripts and agendas into actionable briefs
+- **Legal Research** - Generate topic or incident briefs
 - **Document Parsing** - Built-in PDF, DOCX, TXT, and Markdown support
-- **MCP Server** - Expose document reading as MCP tools for other agents
-- **Customizable Playbook** - Configure your organization's standard positions
+- **Dynamic Skills** - Automatically loads methodologies from `/skills` and `/commands`
 
 ## Prerequisites
 
@@ -161,7 +163,10 @@ Available tools:
 |-------|-------------|
 | `contract-review` | Playbook-based contract analysis, deviation classification, redline generation |
 | `nda-triage` | NDA screening criteria, classification rules, routing recommendations |
+| `compliance` | Privacy regulation guidance, DPA review checklist, DSAR handling |
 | `legal-risk-assessment` | Risk severity framework, classification levels, escalation criteria |
+| `meeting-briefing` | Meeting summarization, legal action item tracking, agenda synthesis |
+| `canned-responses` | Standardized legal response templates and logic |
 
 ## License
 

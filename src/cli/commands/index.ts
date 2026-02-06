@@ -1,5 +1,5 @@
-import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync, readFileSync } from 'fs';
+import { resolve, join } from 'path';
 import {
     createAiClient,
     chat,
@@ -124,6 +124,28 @@ async function runAgentLoop(
 }
 
 /**
+ * Load skill markdown content
+ */
+function loadSkill(skillName: string): string | null {
+    const skillPath = resolve(process.cwd(), 'skills', skillName, 'SKILL.md');
+    if (existsSync(skillPath)) {
+        return readFileSync(skillPath, 'utf8');
+    }
+    return null;
+}
+
+/**
+ * Load command markdown content
+ */
+function loadCommand(commandName: string): string | null {
+    const commandPath = resolve(process.cwd(), 'commands', `${commandName}.md`);
+    if (existsSync(commandPath)) {
+        return readFileSync(commandPath, 'utf8');
+    }
+    return null;
+}
+
+/**
  * Review a contract against the playbook
  */
 export async function reviewContract(
@@ -135,34 +157,19 @@ export async function reviewContract(
     } = {}
 ): Promise<string> {
     const playbook = loadPlaybook();
+    const skillContent = loadSkill('contract-review');
+    const commandContent = loadCommand('review-contract');
 
-    const systemPrompt = `You are a contract review assistant for an in-house legal team. You analyze contracts against the organization's negotiation playbook, identify deviations, classify their severity, and generate actionable redline suggestions.
-
-**Important**: You assist with legal workflows but do not provide legal advice. All analysis should be reviewed by qualified legal professionals before being relied upon.
-
-## Review Process
-1. **Read the entire contract** using the read_document tool
-2. **Identify the contract type**: SaaS agreement, professional services, license, partnership, procurement, etc.
-3. **Analyze each material clause** against the playbook positions
-4. **Classify deviations** as GREEN (acceptable), YELLOW (negotiate), or RED (escalate)
-5. **Generate specific redline suggestions** for YELLOW and RED items
-6. **Provide a summary** with overall risk assessment
-
-## Severity Classification
-- **GREEN -- Acceptable**: Terms match or are more favorable than standard positions
-- **YELLOW -- Negotiate**: Deviations from standard but within acceptable range; suggest specific language changes
-- **RED -- Escalate**: Terms outside acceptable range or contain high-risk provisions; requires senior review
+    const systemPrompt = skillContent || `You are a contract review assistant for an in-house legal team. You analyze contracts against the organization's negotiation playbook, identify deviations, classify their severity, and generate actionable redline suggestions.
 
 ${playbook ? `## Organization Playbook\n${playbook}` : '## Note\nNo playbook configured. Using general commercial standards as baseline.'}`;
 
-    const userMessage = `I need you to review a contract.
-    
-**Step 1**: Use the 'read_document' tool with the EXACT path: "${documentPath}"
+    const userMessage = `${commandContent ? `Execute command: /review-contract\n\n` : ''}I need you to review a contract at: "${documentPath}"
 
 ${options.side ? `We are the ${options.side} in this agreement.` : ''}
 ${options.focusAreas?.length ? `Focus areas: ${options.focusAreas.join(', ')}` : ''}
 
-After reading the file, provide a clause-by-clause analysis with GREEN/YELLOW/RED classifications and specific redline suggestions for any issues.`;
+Please provide a detailed review using your established methodology.`;
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
 }
@@ -172,34 +179,14 @@ After reading the file, provide a clause-by-clause analysis with GREEN/YELLOW/RE
  */
 export async function triageNda(documentPath: string, options: { model?: string } = {}): Promise<string> {
     const playbook = loadPlaybook();
+    const skillContent = loadSkill('nda-triage');
+    const commandContent = loadCommand('triage-nda');
 
-    const systemPrompt = `You are an NDA triage specialist. You rapidly assess incoming NDAs against standard criteria and categorize them for appropriate handling.
-
-**Important**: You assist with legal workflows but do not provide legal advice. All analysis should be reviewed by qualified legal professionals.
-
-## Triage Categories
-- **GREEN (Standard Approval)**: NDA matches standard terms, can be routed for signature
-- **YELLOW (Counsel Review)**: Specific issues that need attention but are likely resolvable
-- **RED (Significant Issues)**: Non-standard terms or provisions requiring full counsel review
-
-## Key Evaluation Criteria
-1. **Mutual vs Unilateral**: Is the NDA mutual?
-2. **Definition of Confidential Information**: Appropriately scoped?
-3. **Term**: Within acceptable range (typically 2-5 years)?
-4. **Permitted Disclosures**: Standard carveouts present?
-5. **Return/Destruction**: Standard provisions?
-6. **Governing Law**: Acceptable jurisdiction?
-7. **Residuals Clause**: If present, is it narrowly scoped?
+    const systemPrompt = skillContent || `You are an NDA triage specialist. You rapidly assess incoming NDAs against standard criteria and categorize them for appropriate handling.
 
 ${playbook ? `## Organization NDA Standards\n${playbook}` : '## Note\nUsing general NDA standards as baseline.'}`;
 
-    const userMessage = `Please triage the NDA at: ${documentPath}
-
-Provide:
-1. Overall classification (GREEN/YELLOW/RED)
-2. Key findings for each evaluation criterion
-3. Specific issues requiring attention (if any)
-4. Recommended next steps`;
+    const userMessage = `${commandContent ? `Execute command: /triage-nda\n\n` : ''}Please triage the NDA at: ${documentPath}`;
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
 }
@@ -212,20 +199,52 @@ export async function generateBrief(
     query: string,
     options: { model?: string } = {}
 ): Promise<string> {
-    const systemPrompt = `You are a legal briefing assistant. You generate clear, concise briefings on legal topics or incidents for in-house legal teams.
+    const commandContent = loadCommand('brief');
 
-**Important**: You provide research assistance but not legal advice. Conclusions should be verified with qualified legal professionals.
+    const systemPrompt = `You are a legal briefing assistant. You generate clear, concise briefings on legal topics or incidents for in-house legal teams.`;
 
-## Briefing Format
-1. **Executive Summary**: Key points in 2-3 sentences
-2. **Background**: Relevant context and facts
-3. **Analysis**: Legal considerations and implications
-4. **Recommendations**: Suggested actions or next steps
-5. **References**: Any relevant documents or precedents`;
-
-    const userMessage = type === 'topic'
+    const userMessage = `${commandContent ? `Execute command: /brief\n\n` : ''}${type === 'topic'
         ? `Generate a research brief on the following legal topic: ${query}`
-        : `Generate an incident brief for the following situation: ${query}`;
+        : `Generate an incident brief for the following situation: ${query}`}`;
+
+    return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
+}
+
+/**
+ * Check Compliance
+ */
+export async function checkCompliance(documentPath: string, options: { model?: string } = {}): Promise<string> {
+    const skillContent = loadSkill('compliance');
+
+    const systemPrompt = skillContent || `You are a compliance assistant for an in-house legal team. You help with privacy regulation compliance, DPA reviews, and data subject requests.`;
+
+    const userMessage = `Please review the following document for compliance issues: ${documentPath}`;
+
+    return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
+}
+
+/**
+ * Assess Legal Risk
+ */
+export async function assessRisk(documentPath: string, options: { model?: string } = {}): Promise<string> {
+    const skillContent = loadSkill('legal-risk-assessment');
+
+    const systemPrompt = skillContent || `You are a legal risk assessment specialist. You conduct end-to-end risk analysis of documents or business situations.`;
+
+    const userMessage = `Please conduct a full legal risk assessment for: ${documentPath}`;
+
+    return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
+}
+
+/**
+ * Summarize Meeting
+ */
+export async function summarizeMeeting(documentPath: string, options: { model?: string } = {}): Promise<string> {
+    const skillContent = loadSkill('meeting-briefing');
+
+    const systemPrompt = skillContent || `You are a legal meeting assistant. You summarize meeting transcripts and agendas into actionable legal briefs.`;
+
+    const userMessage = `Please summarize the following meeting record and highlight legal action items: ${documentPath}`;
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
 }
