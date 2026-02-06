@@ -34,13 +34,14 @@ router.post('/review', upload.single('document'), async (req, res) => {
             return;
         }
 
-        const { side, focus } = req.body;
+        const { side, focus, model } = req.body;
         const focusAreas = focus ? focus.split(',').map((s: string) => s.trim()) : [];
 
         // Call existing logic
         const analysis = await reviewContract(req.file.path, {
             side: side as 'vendor' | 'customer',
-            focusAreas
+            focusAreas,
+            model: model as string
         });
 
         res.json({ success: true, analysis });
@@ -59,7 +60,8 @@ router.post('/triage', upload.single('document'), async (req, res) => {
             return;
         }
 
-        const analysis = await triageNda(req.file.path);
+        const { model } = req.body;
+        const analysis = await triageNda(req.file.path, { model: model as string });
         res.json({ success: true, analysis });
 
     } catch (error) {
@@ -71,14 +73,14 @@ router.post('/triage', upload.single('document'), async (req, res) => {
 // 3. Legal Brief
 router.post('/brief', async (req, res) => {
     try {
-        const { type, query } = req.body;
+        const { type, query, model } = req.body;
 
         if (!type || !query) {
             res.status(400).json({ error: 'Missing type or query' });
             return;
         }
 
-        const analysis = await generateBrief(type as 'topic' | 'incident', query);
+        const analysis = await generateBrief(type as 'topic' | 'incident', query, { model: model as string });
         res.json({ success: true, analysis });
 
     } catch (error) {

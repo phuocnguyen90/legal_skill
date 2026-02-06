@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { appConfig } from '../config/index.js';
+import { appConfig, getProviderForModel } from '../config/index.js';
 
 export type Message = Anthropic.MessageParam;
 export type Tool = Anthropic.Tool;
@@ -33,156 +33,157 @@ function getHeaderValue(headers: any, name: string): string | null {
  * Create an Anthropic-compatible AI client with provider-specific adapters
  */
 export function createAiClient(): Anthropic {
-    const provider = appConfig.ai.provider;
-
     return new Anthropic({
-        baseURL: appConfig.ai.baseUrl,
-        apiKey: appConfig.ai.apiKey,
-        timeout: 300_000, // 5 minutes for local/large model inference
+        // Default values, can be overridden in fetch
+        baseURL: 'https://api.anthropic.com',
+        apiKey: 'dummy',
+        timeout: 300_000,
 
-        // Custom fetch acting as an adapter for non-Anthropic providers (like GLM/OpenAI)
+        // Custom fetch acting as an adapter for non-Anthropic providers
         fetch: async (url: any, init?: any): Promise<any> => {
             const urlString = url.toString();
+            let finalUrl = urlString;
+            let finalBody = init?.body;
+            let currentProvider: any = appConfig.ai.provider;
+            let bodyData: any = null;
 
-            // Logic for GLM/OpenAI compatible providers
-            if (provider === 'glm' || provider === 'openai') {
-                let finalUrl = urlString;
+            // 1. Determine Provider and Model from request
+            if (init?.body) {
+                try {
+                    bodyData = JSON.parse(init.body);
+                    if (bodyData.model) {
+                        currentProvider = getProviderForModel(bodyData.model);
+                    }
+                } catch (e) { /* ignore */ }
+            }
 
-                // 1. Path Transformation: Anthropic SDK uses /messages, GLM/OpenAI uses /chat/completions
+            const providerConfig = (appConfig.ai.providers as any)[currentProvider];
+
+            // 2. Handle OpenAI-compatible providers (Ollama, GLM, OpenAI, OpenRouter)
+            if (currentProvider !== 'anthropic') {
+                // Determine Base URL
+                let baseUrl = providerConfig?.baseUrl || urlString.split('/v1')[0];
+                if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
+                // Path Transformation
                 try {
                     const parsedUrl = new URL(urlString);
                     if (parsedUrl.pathname.endsWith('/v1/messages') || parsedUrl.pathname.endsWith('/messages')) {
-                        parsedUrl.pathname = parsedUrl.pathname
-                            .replace(/\/v1\/messages$/, '/chat/completions')
-                            .replace(/\/messages$/, '/chat/completions');
+                        // Use provider specific base URL if available
+                        if (providerConfig?.baseUrl) {
+                            const providerUrl = new URL(providerConfig.baseUrl);
+                            parsedUrl.protocol = providerUrl.protocol;
+                            parsedUrl.host = providerUrl.host;
+                            parsedUrl.pathname = providerUrl.pathname;
+                            if (parsedUrl.pathname.endsWith('/')) parsedUrl.pathname = parsedUrl.pathname.slice(0, -1);
+                        }
 
-                        // Special fix for GLM to inject /paas/v4
-                        if (provider === 'glm' && !parsedUrl.pathname.includes('/paas/v4/')) {
-                            // Ensure the path contains /api/paas/v4/chat/completions
-                            if (parsedUrl.pathname.includes('/api/')) {
-                                parsedUrl.pathname = parsedUrl.pathname.replace(/\/api\//, '/api/paas/v4/');
-                            } else {
-                                parsedUrl.pathname = '/api/paas/v4' + (parsedUrl.pathname.startsWith('/') ? '' : '/') + parsedUrl.pathname;
+                        // Apply standardized chat conversion path
+                        if (parsedUrl.pathname.endsWith('/v1/messages')) {
+                            parsedUrl.pathname = parsedUrl.pathname.replace(/\/v1\/messages$/, '/v1/chat/completions');
+                        } else if (parsedUrl.pathname.endsWith('/messages')) {
+                            parsedUrl.pathname = parsedUrl.pathname.replace(/\/messages$/, '/chat/completions');
+                        } else {
+                            // If it was just a base URL, append chat/completions
+                            parsedUrl.pathname += '/chat/completions';
+                        }
+
+                        // GLM Specific injection
+                        if (currentProvider === 'glm') {
+                            parsedUrl.pathname = parsedUrl.pathname.replace(/\/v1\/chat\/completions$/, '/chat/completions');
+                            if (!parsedUrl.pathname.includes('/paas/v4/')) {
+                                if (parsedUrl.pathname.includes('/api/')) {
+                                    parsedUrl.pathname = parsedUrl.pathname.replace(/\/api\//, '/api/paas/v4/');
+                                } else {
+                                    parsedUrl.pathname = '/api/paas/v4' + (parsedUrl.pathname.startsWith('/') ? '' : '/') + parsedUrl.pathname;
+                                }
                             }
                         }
                         finalUrl = parsedUrl.toString();
                     }
                 } catch (e) {
-                    console.error('⚠️ [AI Adapter] URL parsing failed:', e);
+                    console.error('⚠️ [AI Adapter] URL transformation failed:', e);
                 }
 
-                // 2. Header Transformation
-                const apiKey = getHeaderValue(init?.headers, 'x-api-key') || appConfig.ai.apiKey;
-
+                // Header Transformation
+                const apiKey = providerConfig?.apiKey || getHeaderValue(init?.headers, 'x-api-key');
                 const finalHeaders: Record<string, string> = {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 };
 
-                // Copy other headers selectively
+                if (currentProvider === 'openrouter') {
+                    finalHeaders['HTTP-Referer'] = 'https://github.com/phuoc/legal_skill';
+                    finalHeaders['X-Title'] = 'Legal AI Assistant';
+                }
+
                 if (init?.headers) {
                     const h = init.headers;
                     const keys = typeof h.keys === 'function' ? Array.from(h.keys() as any) : Object.keys(h);
-
                     for (const key of keys) {
                         const lowKey = (key as string).toLowerCase();
-                        if (
-                            !lowKey.startsWith('anthropic') &&
-                            lowKey !== 'x-api-key' &&
-                            lowKey !== 'content-type' &&
-                            lowKey !== 'accept' &&
-                            lowKey !== 'authorization' &&
-                            lowKey !== 'connection' &&
-                            lowKey !== 'host' &&
-                            lowKey !== 'content-length' &&
-                            lowKey !== 'transfer-encoding' &&
-                            lowKey !== 'user-agent'
-                        ) {
+                        if (!['anthropic-version', 'x-api-key', 'content-type', 'accept', 'authorization', 'connection', 'host', 'content-length', 'user-agent'].includes(lowKey)) {
                             finalHeaders[key as string] = typeof h.get === 'function' ? h.get(key) : (h as any)[key as any];
                         }
                     }
                 }
 
-                let finalBody = init?.body;
+                // Body Transformation
+                if (init?.method?.toUpperCase() === 'POST' && bodyData) {
+                    const openaiBody: any = {
+                        model: bodyData.model,
+                        messages: [],
+                        max_tokens: bodyData.max_tokens,
+                        stream: bodyData.stream || false,
+                        temperature: bodyData.temperature || 1.0,
+                    };
 
-                // 3. Body Transformation: Anthropic -> OpenAI/GLM
-                const isPost = init?.method && init.method.toUpperCase() === 'POST';
-                if (isPost && init.body) {
-                    try {
-                        const bodyStr = typeof init.body === 'string' ? init.body : init.body.toString();
-                        const anthropicBody = JSON.parse(bodyStr);
+                    if (bodyData.system) {
+                        openaiBody.messages.push({ role: 'system', content: bodyData.system });
+                    }
 
-                        const openaiBody: any = {
-                            model: anthropicBody.model,
-                            messages: [],
-                            max_tokens: anthropicBody.max_tokens,
-                            stream: anthropicBody.stream || false,
-                            temperature: anthropicBody.temperature || 1.0,
-                        };
-
-                        // Convert System Prompt
-                        if (anthropicBody.system) {
-                            openaiBody.messages.push({ role: 'system', content: anthropicBody.system });
-                        }
-
-                        // Convert Messages
-                        if (Array.isArray(anthropicBody.messages)) {
-                            for (const msg of anthropicBody.messages) {
-                                if (Array.isArray(msg.content)) {
-                                    // Handle complex content (like tool results)
-                                    for (const block of msg.content) {
-                                        if (block.type === 'text') {
-                                            openaiBody.messages.push({ role: msg.role, content: block.text });
-                                        } else if (block.type === 'tool_result') {
-                                            openaiBody.messages.push({
-                                                role: 'tool',
-                                                tool_call_id: block.tool_use_id,
-                                                content: typeof block.content === 'string' ? block.content : JSON.stringify(block.content)
-                                            });
-                                        } else if (block.type === 'tool_use') {
-                                            // Assistant's tool use
-                                            openaiBody.messages.push({
-                                                role: 'assistant',
-                                                content: null,
-                                                tool_calls: [{
-                                                    id: block.id,
-                                                    type: 'function',
-                                                    function: { name: block.name, arguments: JSON.stringify(block.input) }
-                                                }]
-                                            });
-                                        }
+                    if (Array.isArray(bodyData.messages)) {
+                        for (const msg of bodyData.messages) {
+                            if (Array.isArray(msg.content)) {
+                                for (const block of msg.content) {
+                                    if (block.type === 'text') openaiBody.messages.push({ role: msg.role, content: block.text });
+                                    else if (block.type === 'tool_result') {
+                                        openaiBody.messages.push({
+                                            role: 'tool',
+                                            tool_call_id: block.tool_use_id,
+                                            content: typeof block.content === 'string' ? block.content : JSON.stringify(block.content)
+                                        });
+                                    } else if (block.type === 'tool_use') {
+                                        openaiBody.messages.push({
+                                            role: 'assistant',
+                                            content: null,
+                                            tool_calls: [{
+                                                id: block.id,
+                                                type: 'function',
+                                                function: { name: block.name, arguments: JSON.stringify(block.input) }
+                                            }]
+                                        });
                                     }
-                                } else {
-                                    openaiBody.messages.push({ role: msg.role, content: msg.content });
                                 }
+                            } else {
+                                openaiBody.messages.push({ role: msg.role, content: msg.content });
                             }
                         }
-
-                        // Convert Tools
-                        if (Array.isArray(anthropicBody.tools) && anthropicBody.tools.length > 0) {
-                            openaiBody.tools = anthropicBody.tools.map((tool: any) => ({
-                                type: 'function',
-                                function: {
-                                    name: tool.name,
-                                    description: tool.description,
-                                    parameters: tool.input_schema
-                                }
-                            }));
-                            openaiBody.tool_choice = 'auto';
-                        }
-
-                        finalBody = JSON.stringify(openaiBody);
-                        console.error(`   📤 [AI Adapter] Payload transformed for ${provider}`);
-                    } catch (e) {
-                        console.error('⚠️ [AI Adapter] Request transform failed:', e);
                     }
-                } else if (isPost) {
-                    console.error('   ⚠️ [AI Adapter] POST request missing body');
+
+                    if (Array.isArray(bodyData.tools) && bodyData.tools.length > 0) {
+                        openaiBody.tools = bodyData.tools.map((tool: any) => ({
+                            type: 'function',
+                            function: { name: tool.name, description: tool.description, parameters: tool.input_schema }
+                        }));
+                        openaiBody.tool_choice = 'auto';
+                    }
+                    finalBody = JSON.stringify(openaiBody);
                 }
 
-                // Execute the request
-                console.error(`   🌐 [AI Adapter] Fetching: ${finalUrl}`);
+                // Execute
+                console.error(`   🌐 [AI Adapter] Fetching (${currentProvider}): ${finalUrl}`);
                 const response = await fetch(finalUrl, {
                     method: init?.method || 'GET',
                     headers: finalHeaders,
@@ -191,29 +192,13 @@ export function createAiClient(): Anthropic {
                     redirect: 'follow'
                 });
 
-                console.error(`   📥 [AI Adapter] Status: ${response.status} ${response.statusText}`);
-
-                // 4. Response Transformation: OpenAI/GLM -> Anthropic
                 if (response.ok && !urlString.includes('stream=true')) {
                     const data: any = await response.json();
-
-                    if (!data.choices || !data.choices[0]) {
-                        console.error(`   ⚠️ [AI Adapter] Unexpected response structure:`, JSON.stringify(data));
-                        const errorMsg = data.msg || data.message || (data.error && (data.error.message || data.error.msg));
-                        if (errorMsg || (data.code && data.code !== 200)) {
-                            return new Response(JSON.stringify({
-                                error: { type: 'api_error', message: errorMsg || `API Error ${data.code}` }
-                            }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-                        }
-                    } else {
-                        console.error(`   📦 [AI Adapter] Received data (model: ${data.model || 'unknown'})`);
-                    }
-
                     const anthropicResponse = {
                         id: data.id || `msg_${Date.now()}`,
                         type: 'message',
                         role: 'assistant',
-                        model: data.model || appConfig.ai.model,
+                        model: data.model || bodyData?.model,
                         content: [] as any[],
                         usage: {
                             input_tokens: data.usage?.prompt_tokens || 0,
@@ -223,9 +208,7 @@ export function createAiClient(): Anthropic {
 
                     const choice = data.choices?.[0]?.message;
                     if (choice) {
-                        if (choice.content) {
-                            anthropicResponse.content.push({ type: 'text', text: choice.content });
-                        }
+                        if (choice.content) anthropicResponse.content.push({ type: 'text', text: choice.content });
                         if (choice.tool_calls) {
                             for (const tc of choice.tool_calls) {
                                 anthropicResponse.content.push({
@@ -237,26 +220,27 @@ export function createAiClient(): Anthropic {
                             }
                         }
                     }
-
-                    return new Response(JSON.stringify(anthropicResponse), {
-                        status: 200,
-                        headers: { 'Content-Type': 'application/json' }
-                    });
+                    return new Response(JSON.stringify(anthropicResponse), { status: 200, headers: { 'Content-Type': 'application/json' } });
                 }
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`   ❌ [AI Adapter] Error body:`, errorText);
-                    return new Response(errorText, {
-                        status: response.status,
-                        headers: response.headers
-                    });
+                    console.error(`   ❌ [AI Adapter] Error:`, errorText);
+                    return new Response(errorText, { status: response.status, headers: response.headers });
                 }
-
                 return response;
             }
 
-            return fetch(url, init);
+            // Standard Anthropic handling
+            const apiKey = providerConfig?.apiKey || getHeaderValue(init?.headers, 'x-api-key');
+            const anthropicInit = { ...init };
+            if (apiKey) {
+                const headers = new Headers(init?.headers);
+                headers.set('x-api-key', apiKey);
+                anthropicInit.headers = headers;
+            }
+
+            return fetch(finalUrl, anthropicInit);
         }
     });
 }

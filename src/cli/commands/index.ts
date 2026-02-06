@@ -65,8 +65,12 @@ async function executeDocumentTool(
 async function runAgentLoop(
     systemPrompt: string,
     userMessage: string,
-    maxIterations: number = 10
+    options: {
+        maxIterations?: number;
+        model?: string;
+    } = {}
 ): Promise<string> {
+    const { maxIterations = 10, model = appConfig.ai.model } = options;
     const client = createAiClient();
     const messages: Message[] = [{ role: 'user', content: userMessage }];
 
@@ -75,12 +79,13 @@ async function runAgentLoop(
     while (iterations < maxIterations) {
         iterations++;
 
-        console.error(`\n🤖 [Iteration ${iterations}] Calling model: ${appConfig.ai.model}...`);
+        console.error(`\n🤖 [Iteration ${iterations}] Calling model: ${model}...`);
 
         const response = await chat(client, messages, {
             systemPrompt,
             tools: documentTools,
             maxTokens: 8192,
+            model,
         });
 
         // Print text content if present
@@ -126,6 +131,7 @@ export async function reviewContract(
     options: {
         side?: 'vendor' | 'customer';
         focusAreas?: string[];
+        model?: string;
     } = {}
 ): Promise<string> {
     const playbook = loadPlaybook();
@@ -158,13 +164,13 @@ ${options.focusAreas?.length ? `Focus areas: ${options.focusAreas.join(', ')}` :
 
 After reading the file, provide a clause-by-clause analysis with GREEN/YELLOW/RED classifications and specific redline suggestions for any issues.`;
 
-    return await runAgentLoop(systemPrompt, userMessage);
+    return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
 }
 
 /**
  * Triage an NDA
  */
-export async function triageNda(documentPath: string): Promise<string> {
+export async function triageNda(documentPath: string, options: { model?: string } = {}): Promise<string> {
     const playbook = loadPlaybook();
 
     const systemPrompt = `You are an NDA triage specialist. You rapidly assess incoming NDAs against standard criteria and categorize them for appropriate handling.
@@ -195,7 +201,7 @@ Provide:
 3. Specific issues requiring attention (if any)
 4. Recommended next steps`;
 
-    return await runAgentLoop(systemPrompt, userMessage);
+    return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
 }
 
 /**
@@ -203,7 +209,8 @@ Provide:
  */
 export async function generateBrief(
     type: 'topic' | 'incident',
-    query: string
+    query: string,
+    options: { model?: string } = {}
 ): Promise<string> {
     const systemPrompt = `You are a legal briefing assistant. You generate clear, concise briefings on legal topics or incidents for in-house legal teams.
 
@@ -220,5 +227,5 @@ export async function generateBrief(
         ? `Generate a research brief on the following legal topic: ${query}`
         : `Generate an incident brief for the following situation: ${query}`;
 
-    return await runAgentLoop(systemPrompt, userMessage);
+    return await runAgentLoop(systemPrompt, userMessage, { model: options.model });
 }

@@ -24,9 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('/api/config')
         .then(res => res.json())
         .then(config => {
-            const modelNameEl = document.getElementById('model-name');
-            if (modelNameEl) {
-                modelNameEl.textContent = `${config.ollamaModel} Active`;
+            const modelSelect = document.getElementById('model-select');
+            if (modelSelect && config.aiModel) {
+                // Add current model if it's not in the list
+                const exists = Array.from(modelSelect.options).some(opt => opt.value === config.aiModel);
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = config.aiModel;
+                    opt.textContent = config.aiModel;
+                    modelSelect.add(opt);
+                }
+                modelSelect.value = config.aiModel;
             }
         })
         .catch(err => console.error('Failed to fetch config', err));
@@ -105,19 +113,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop('review-dropzone', 'review-file', (file) => {
         const side = document.getElementById('review-side').value;
         const focus = document.getElementById('review-focus').value;
+        const model = document.getElementById('model-select').value;
 
         const formData = new FormData();
         formData.append('document', file);
         formData.append('side', side);
         formData.append('focus', focus);
+        formData.append('model', model);
 
         sendRequest('/api/review', formData, 'review-results');
     });
 
     // --- NDA Triage Logic ---
     setupDragAndDrop('triage-dropzone', 'triage-file', (file) => {
+        const model = document.getElementById('model-select').value;
         const formData = new FormData();
         formData.append('document', file);
+        formData.append('model', model);
 
         sendRequest('/api/triage', formData, 'triage-results');
     });
@@ -144,10 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.classList.remove('hidden');
         content.innerHTML = '';
 
+        const model = document.getElementById('model-select').value;
         fetch('/api/brief', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, query })
+            body: JSON.stringify({ type, query, model })
         })
             .then(res => res.json())
             .then(data => {

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,18 +10,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="app-container">
         <aside class="sidebar">
             <div class="logo">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
                 </svg>
                 <span>Legal AI</span>
             </div>
-            
+
             <nav class="nav-menu">
                 <button class="nav-item active" data-tab="contract-review">
                     <span class="icon">📄</span> Contract Review
@@ -34,9 +39,18 @@
             </nav>
 
             <div class="status-panel">
-                <div class="status-item">
-                    <span class="status-dot online"></span>
-                    <span id="model-name">Loading model...</span>
+                <div class="input-group">
+                    <label>Active Model</label>
+                    <select id="model-select">
+                        <option value="glm-4.5">GLM 4.5 (Z.AI)</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                        <option value="nvidia/nemotron-3-nano-30b-a3b:free">Nemotron 3 Nano 30B (OpenRouter)</option>
+                        <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash (OpenRouter)</option>
+                        <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B (OpenRouter)</option>
+                        <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B (OpenRouter)</option>
+                        <option value="gemma3:12b">Gemma 3 (Ollama)</option>
+                    </select>
                 </div>
             </div>
         </aside>
@@ -129,8 +143,9 @@
             </section>
         </main>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>
