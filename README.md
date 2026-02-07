@@ -83,7 +83,7 @@ cp .env.example .env
 # Edit .env with your preferred provider
 # For Ollama (recommended for local use):
 AI_PROVIDER=ollama
-AI_MODEL=gemma3:12b
+AI_MODEL=gpt-oss-20b # note: gemma3:12b does not natively support function call on ollama
 OLLAMA_BASE_URL=http://localhost:11434
 
 # For OpenRouter (cloud models):
