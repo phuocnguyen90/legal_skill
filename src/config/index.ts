@@ -101,10 +101,13 @@ export function getProviderForModel(modelId: string): Config['ai']['provider'] {
         return 'openrouter';
     }
     if (modelId.startsWith('glm')) return 'glm';
-    if (modelId.startsWith('gpt-')) return 'openai';
+    // Ollama's gpt-oss models should not be routed to OpenAI
+    if (modelId.startsWith('gpt-oss')) return 'ollama';
+    // Match specific OpenAI models (gpt-3.*, gpt-4.*, o1-*)
+    if (/^gpt-[34]|^o1-/.test(modelId)) return 'openai';
     if (modelId.startsWith('claude-')) return 'anthropic';
 
-    // Default to ollama for everything else (like gemma, llama)
+    // Default to ollama for everything else (like gemma, llama, qwen)
     return 'ollama';
 }
 

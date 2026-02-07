@@ -34,15 +34,16 @@ router.post('/review', upload.single('document'), async (req, res) => {
             return;
         }
 
-        const { side, focus, model, replyInOriginalLanguage } = req.body;
+        const { side, focus, model, replyInOriginalLanguage, prompt } = req.body;
         const focusAreas = focus ? focus.split(',').map((s: string) => s.trim()) : [];
 
-        // Call existing logic
+        // Call existing logic with optional prompt
         const analysis = await reviewContract(req.file.path, {
             side: side as 'vendor' | 'customer',
             focusAreas,
             model: model as string,
-            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true,
+            prompt: prompt as string || undefined,
         });
 
         res.json({ success: true, analysis });
@@ -61,10 +62,11 @@ router.post('/triage', upload.single('document'), async (req, res) => {
             return;
         }
 
-        const { model, replyInOriginalLanguage } = req.body;
+        const { model, replyInOriginalLanguage, prompt } = req.body;
         const analysis = await triageNda(req.file.path, {
             model: model as string,
-            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true,
+            prompt: prompt as string || undefined,
         });
         res.json({ success: true, analysis });
 
@@ -103,10 +105,11 @@ router.post('/compliance', upload.single('document'), async (req, res) => {
             res.status(400).json({ error: 'No document file uploaded' });
             return;
         }
-        const { model, replyInOriginalLanguage } = req.body;
+        const { model, replyInOriginalLanguage, prompt } = req.body;
         const result = await checkCompliance(req.file.path, {
             model: model as string,
-            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true,
+            prompt: prompt as string || undefined,
         });
         res.json({ success: true, analysis: result });
     } catch (error) {
@@ -122,10 +125,11 @@ router.post('/risk', upload.single('document'), async (req, res) => {
             res.status(400).json({ error: 'No document file uploaded' });
             return;
         }
-        const { model, replyInOriginalLanguage } = req.body;
+        const { model, replyInOriginalLanguage, prompt } = req.body;
         const result = await assessRisk(req.file.path, {
             model: model as string,
-            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true,
+            prompt: prompt as string || undefined,
         });
         res.json({ success: true, analysis: result });
     } catch (error) {
@@ -141,10 +145,11 @@ router.post('/meeting', upload.single('document'), async (req, res) => {
             res.status(400).json({ error: 'No document file uploaded' });
             return;
         }
-        const { model, replyInOriginalLanguage } = req.body;
+        const { model, replyInOriginalLanguage, prompt } = req.body;
         const result = await summarizeMeeting(req.file.path, {
             model: model as string,
-            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true
+            replyInOriginalLanguage: replyInOriginalLanguage === 'true' || replyInOriginalLanguage === true,
+            prompt: prompt as string || undefined,
         });
         res.json({ success: true, analysis: result });
     } catch (error) {

@@ -104,8 +104,24 @@ async function runAgentLoop(
             process.stderr.write(`${text}\n`);
         }
 
-        // If no tool use, check verification
+        // If no tool use, check if response is substantial
         if (!hasToolUse(response)) {
+            // Check for minimal/acknowledgment responses that shouldn't end the loop
+            const minimalResponses = ['understood', 'ok', 'okay', 'got it', 'thanks', 'thank you', 'received', 'noted', 'acknowledged'];
+            const normalizedText = text.toLowerCase().trim();
+            const isMinimalResponse = minimalResponses.some(r => normalizedText === r) || text.length < 100;
+
+            // If response is too minimal, prompt the model to continue
+            if (isMinimalResponse && iterations < maxIterations) {
+                console.error(`\n⚠️  Response too brief. Prompting model to continue...`);
+                messages.push({ role: 'assistant', content: response.content });
+                messages.push({
+                    role: 'user',
+                    content: `Please proceed with your complete analysis now. Don't just acknowledge - provide the full detailed response as requested.`
+                });
+                continue; // Loop again for substantive response
+            }
+
             // Post-hoc verification if requested and we have a document content to compare against
             if (replyInOriginalLanguage && !languageCheckFailedOnce && lastDocumentContent && text.length > 50) {
                 console.error(`\n🔎 Verifying language compliance...`);
@@ -210,6 +226,7 @@ export async function reviewContract(
         focusAreas?: string[];
         model?: string;
         replyInOriginalLanguage?: boolean;
+        prompt?: string;
     } = {}
 ): Promise<string> {
     const playbook = loadPlaybook();
@@ -220,12 +237,17 @@ export async function reviewContract(
 
 ${playbook ? `## Organization Playbook\n${playbook}` : '## Note\nNo playbook configured. Using general commercial standards as baseline.'}`;
 
-    const userMessage = `${commandContent ? `Execute command: /review-contract\n\n` : ''}I need you to review a contract at: "${documentPath}"
+    let userMessage = `${commandContent ? `Execute command: /review-contract\n\n` : ''}I need you to review a contract at: "${documentPath}"
 
 ${options.side ? `We are the ${options.side} in this agreement.` : ''}
 ${options.focusAreas?.length ? `Focus areas: ${options.focusAreas.join(', ')}` : ''}
 
 Please provide a detailed review using your established methodology.`;
+
+    // Append custom user prompt if provided
+    if (options.prompt) {
+        userMessage += `\n\n**Additional User Instructions:**\n${options.prompt}`;
+    }
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model, replyInOriginalLanguage: options.replyInOriginalLanguage });
 }
@@ -233,7 +255,14 @@ Please provide a detailed review using your established methodology.`;
 /**
  * Triage an NDA
  */
-export async function triageNda(documentPath: string, options: { model?: string; replyInOriginalLanguage?: boolean } = {}): Promise<string> {
+export async function triageNda(
+    documentPath: string,
+    options: {
+        model?: string;
+        replyInOriginalLanguage?: boolean;
+        prompt?: string;
+    } = {}
+): Promise<string> {
     const playbook = loadPlaybook();
     const skillContent = loadSkill('nda-triage');
     const commandContent = loadCommand('triage-nda');
@@ -242,7 +271,11 @@ export async function triageNda(documentPath: string, options: { model?: string;
 
 ${playbook ? `## Organization NDA Standards\n${playbook}` : '## Note\nUsing general NDA standards as baseline.'}`;
 
-    const userMessage = `${commandContent ? `Execute command: /triage-nda\n\n` : ''}Please triage the NDA at: ${documentPath}`;
+    let userMessage = `${commandContent ? `Execute command: /triage-nda\n\n` : ''}Please triage the NDA at: ${documentPath}`;
+
+    if (options.prompt) {
+        userMessage += `\n\n**Additional User Instructions:**\n${options.prompt}`;
+    }
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model, replyInOriginalLanguage: options.replyInOriginalLanguage });
 }
@@ -269,12 +302,23 @@ export async function generateBrief(
 /**
  * Check Compliance
  */
-export async function checkCompliance(documentPath: string, options: { model?: string; replyInOriginalLanguage?: boolean } = {}): Promise<string> {
+export async function checkCompliance(
+    documentPath: string,
+    options: {
+        model?: string;
+        replyInOriginalLanguage?: boolean;
+        prompt?: string;
+    } = {}
+): Promise<string> {
     const skillContent = loadSkill('compliance');
 
     const systemPrompt = skillContent || `You are a compliance assistant for an in-house legal team. You help with privacy regulation compliance, DPA reviews, and data subject requests.`;
 
-    const userMessage = `Please review the following document for compliance issues: ${documentPath}`;
+    let userMessage = `Please review the following document for compliance issues: ${documentPath}`;
+
+    if (options.prompt) {
+        userMessage += `\n\n**Additional User Instructions:**\n${options.prompt}`;
+    }
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model, replyInOriginalLanguage: options.replyInOriginalLanguage });
 }
@@ -282,12 +326,23 @@ export async function checkCompliance(documentPath: string, options: { model?: s
 /**
  * Assess Legal Risk
  */
-export async function assessRisk(documentPath: string, options: { model?: string; replyInOriginalLanguage?: boolean } = {}): Promise<string> {
+export async function assessRisk(
+    documentPath: string,
+    options: {
+        model?: string;
+        replyInOriginalLanguage?: boolean;
+        prompt?: string;
+    } = {}
+): Promise<string> {
     const skillContent = loadSkill('legal-risk-assessment');
 
     const systemPrompt = skillContent || `You are a legal risk assessment specialist. You conduct end-to-end risk analysis of documents or business situations.`;
 
-    const userMessage = `Please conduct a full legal risk assessment for: ${documentPath}`;
+    let userMessage = `Please conduct a full legal risk assessment for: ${documentPath}`;
+
+    if (options.prompt) {
+        userMessage += `\n\n**Additional User Instructions:**\n${options.prompt}`;
+    }
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model, replyInOriginalLanguage: options.replyInOriginalLanguage });
 }
@@ -295,12 +350,23 @@ export async function assessRisk(documentPath: string, options: { model?: string
 /**
  * Summarize Meeting
  */
-export async function summarizeMeeting(documentPath: string, options: { model?: string; replyInOriginalLanguage?: boolean } = {}): Promise<string> {
+export async function summarizeMeeting(
+    documentPath: string,
+    options: {
+        model?: string;
+        replyInOriginalLanguage?: boolean;
+        prompt?: string;
+    } = {}
+): Promise<string> {
     const skillContent = loadSkill('meeting-briefing');
 
     const systemPrompt = skillContent || `You are a legal meeting assistant. You summarize meeting transcripts and agendas into actionable legal briefs.`;
 
-    const userMessage = `Please summarize the following meeting record and highlight legal action items: ${documentPath}`;
+    let userMessage = `Please summarize the following meeting record and highlight legal action items: ${documentPath}`;
+
+    if (options.prompt) {
+        userMessage += `\n\n**Additional User Instructions:**\n${options.prompt}`;
+    }
 
     return await runAgentLoop(systemPrompt, userMessage, { model: options.model, replyInOriginalLanguage: options.replyInOriginalLanguage });
 }

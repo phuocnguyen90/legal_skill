@@ -91,6 +91,10 @@
                         <label>Focus Areas (Optional)</label>
                         <input type="text" id="review-focus" placeholder="e.g. indemnity, liability">
                     </div>
+                    <div class="input-group">
+                        <label>Additional Instructions (Optional)</label>
+                        <textarea id="review-prompt" rows="3" placeholder="E.g., Focus on liability caps, check for unusual termination clauses..."></textarea>
+                    </div>
                 </div>
 
                 <div class="upload-area" id="review-dropzone">
@@ -115,6 +119,13 @@
                     <p>Quickly screen NDAs for red flags and categorization.</p>
                 </header>
 
+                <div class="controls-area">
+                    <div class="input-group">
+                        <label>Additional Instructions (Optional)</label>
+                        <textarea id="triage-prompt" rows="3" placeholder="E.g., Check for mutual confidentiality, term length..."></textarea>
+                    </div>
+                </div>
+
                 <div class="upload-area" id="triage-dropzone">
                     <input type="file" id="triage-file" hidden accept=".pdf,.docx,.txt,.md">
                     <div class="upload-content">
@@ -136,6 +147,13 @@
                     <h1>Compliance & Privacy</h1>
                     <p>Review DPAs, privacy notices, and handle data subject requests.</p>
                 </header>
+
+                <div class="controls-area">
+                    <div class="input-group">
+                        <label>Additional Instructions (Optional)</label>
+                        <textarea id="compliance-prompt" rows="3" placeholder="E.g., Focus on GDPR compliance, cross-border data transfers..."></textarea>
+                    </div>
+                </div>
 
                 <div class="upload-area" id="compliance-dropzone">
                     <input type="file" id="compliance-file" hidden accept=".pdf,.docx,.txt,.md">
@@ -159,6 +177,13 @@
                     <p>Conduct end-to-end risk analysis of documents or situations.</p>
                 </header>
 
+                <div class="controls-area">
+                    <div class="input-group">
+                        <label>Additional Instructions (Optional)</label>
+                        <textarea id="risk-prompt" rows="3" placeholder="E.g., Focus on financial risks, jurisdiction issues..."></textarea>
+                    </div>
+                </div>
+
                 <div class="upload-area" id="risk-dropzone">
                     <input type="file" id="risk-file" hidden accept=".pdf,.docx,.txt,.md">
                     <div class="upload-content">
@@ -180,6 +205,13 @@
                     <h1>Meeting Briefing</h1>
                     <p>Generate summaries and talking points from meeting transcripts or agendas.</p>
                 </header>
+
+                <div class="controls-area">
+                    <div class="input-group">
+                        <label>Additional Instructions (Optional)</label>
+                        <textarea id="meeting-prompt" rows="3" placeholder="E.g., Focus on action items, decisions made, deadlines..."></textarea>
+                    </div>
+                </div>
 
                 <div class="upload-area" id="meeting-dropzone">
                     <input type="file" id="meeting-file" hidden accept=".pdf,.docx,.txt,.md">

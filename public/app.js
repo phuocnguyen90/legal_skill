@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const focus = document.getElementById('review-focus').value;
         const model = document.getElementById('model-select').value;
         const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
+        const prompt = document.getElementById('review-prompt')?.value || '';
 
         const formData = new FormData();
         formData.append('document', file);
@@ -122,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('focus', focus);
         formData.append('model', model);
         formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
+        if (prompt.trim()) formData.append('prompt', prompt);
 
         sendRequest('/api/review', formData, 'review-results');
     });
@@ -130,10 +132,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop('triage-dropzone', 'triage-file', (file) => {
         const model = document.getElementById('model-select').value;
         const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
+        const prompt = document.getElementById('triage-prompt')?.value || '';
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
         formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
+        if (prompt.trim()) formData.append('prompt', prompt);
 
         sendRequest('/api/triage', formData, 'triage-results');
     });
@@ -142,10 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop('compliance-dropzone', 'compliance-file', (file) => {
         const model = document.getElementById('model-select').value;
         const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
+        const prompt = document.getElementById('compliance-prompt')?.value || '';
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
         formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
+        if (prompt.trim()) formData.append('prompt', prompt);
 
         sendRequest('/api/compliance', formData, 'compliance-results');
     });
@@ -154,10 +160,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop('risk-dropzone', 'risk-file', (file) => {
         const model = document.getElementById('model-select').value;
         const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
+        const prompt = document.getElementById('risk-prompt')?.value || '';
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
         formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
+        if (prompt.trim()) formData.append('prompt', prompt);
 
         sendRequest('/api/risk', formData, 'risk-results');
     });
@@ -166,10 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop('meeting-dropzone', 'meeting-file', (file) => {
         const model = document.getElementById('model-select').value;
         const replyInOriginalLanguage = document.getElementById('reply-language-check').checked;
+        const prompt = document.getElementById('meeting-prompt')?.value || '';
         const formData = new FormData();
         formData.append('document', file);
         formData.append('model', model);
         formData.append('replyInOriginalLanguage', replyInOriginalLanguage);
+        if (prompt.trim()) formData.append('prompt', prompt);
 
         sendRequest('/api/meeting', formData, 'meeting-results');
     });
